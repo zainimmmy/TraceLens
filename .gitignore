@@ -1,0 +1,30 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+
+# Models and training outputs (published to the Hugging Face Hub instead)
+backend/models/*.onnx
+backend/models/*.json
+training/artifacts/
+training/mlruns/
+training/mlflow.db
+*.pt
+*.npz
+
+# Data
+data/
+
+# Secrets
+.env
+.env.local
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

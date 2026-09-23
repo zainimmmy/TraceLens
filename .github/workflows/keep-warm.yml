@@ -1,0 +1,17 @@
+name: Keep the Space warm
+
+# Free Spaces sleep when idle. A periodic health check keeps the demo responsive.
+# Set the repository variable API_URL, e.g. https://your-username-tracelens-api.hf.space
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    if: ${{ vars.API_URL != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -fsS --max-time 120 "${{ vars.API_URL }}/api/v1/health"

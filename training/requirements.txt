@@ -1,0 +1,10 @@
+# Kaggle and Colab already ship torch, torchvision, numpy, pillow, scikit-learn and scipy.
+# Install the rest with:  pip install -r training/requirements.txt
+timm>=1.0
+mlflow>=2.14
+onnx>=1.16
+onnxruntime>=1.18
+opencv-python-headless>=4.10
+huggingface_hub>=0.24
+scikit-learn>=1.4
+scipy>=1.11

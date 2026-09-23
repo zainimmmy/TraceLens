@@ -1,0 +1,45 @@
+name: Deploy API to Hugging Face Spaces
+
+# Runs after CI passes on main. Needs two repository settings:
+#   Secrets   -> HF_TOKEN  (a Hugging Face *write* token)
+#   Variables -> HF_SPACE  (e.g. your-username/tracelens-api)
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install huggingface_hub
+      - name: Upload backend/ to the Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE: ${{ vars.HF_SPACE }}
+        run: |
+          python - <<'EOF'
+          import os
+          from huggingface_hub import HfApi
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          space = os.environ["HF_SPACE"]
+          api.create_repo(space, repo_type="space", space_sdk="docker", exist_ok=True)
+          api.upload_folder(
+              folder_path="backend",
+              repo_id=space,
+              repo_type="space",
+              ignore_patterns=[".venv/*", "tests/*", "**/__pycache__/*", "*.onnx", ".pytest_cache/*"],
+              commit_message=f"Deploy {os.environ.get('GITHUB_SHA', '')[:7]}",
+          )
+          print(f"Deployed to https://huggingface.co/spaces/{space}")
+          EOF
