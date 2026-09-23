@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Dropzone from "@/components/Dropzone";
+import SectionLabel from "@/components/SectionLabel";
 import { analyzeBatch, filesFromClipboard, saveBlob } from "@/lib/api";
 import { pct, VERDICT_STYLE } from "@/lib/format";
 import type { BatchReport } from "@/lib/types";
@@ -58,12 +59,15 @@ export default function BatchPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <section className="max-w-3xl">
-        <h1 className="text-3xl font-semibold tracking-tight">Batch screening</h1>
-        <p className="mt-2 text-muted">
-          Check up to {MAX_FILES} images at once, or upload a ZIP or PDF (each image inside is checked). You get a summary table with a verdict per image; open any image on the Analyze
-          page for its full heatmaps and report.
+        <p className="label">
+          <span className="label-num">■</span> Bulk screening
+        </p>
+        <h1 className="font-display text-4xl font-semibold tracking-tight mt-4">Batch screening</h1>
+        <p className="mt-4 text-muted leading-relaxed">
+          Check up to {MAX_FILES} images at once, or upload a ZIP or PDF (each image inside is checked). You get one verdict per image; open any
+          image on the Analyze page for its full heatmaps and report.
         </p>
       </section>
 
@@ -75,28 +79,28 @@ export default function BatchPage() {
             onFiles={add}
             disabled={busy}
             title="Drop images, a ZIP or a PDF here, or paste"
-            hint={`Up to ${MAX_FILES} images, 10 MB each · PDFs up to 20 MB · Ctrl+V adds a copied image`}
+            hint={`Up to ${MAX_FILES} images · 10 MB each  //  PDFs up to 20 MB  //  Ctrl+V adds a copied image`}
           />
           {files.length > 0 && (
-            <div className="card p-4">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium">{files.length} file(s) ready</p>
-                <button onClick={() => setFiles([])} className="text-sm text-muted hover:text-text" disabled={busy}>
-                  Clear
-                </button>
-              </div>
-              <ul className="text-sm text-muted max-h-40 overflow-auto space-y-0.5">
+            <div className="panel p-5">
+              <SectionLabel
+                num="Q"
+                right={
+                  <button onClick={() => setFiles([])} className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted hover:text-accent" disabled={busy}>
+                    Clear
+                  </button>
+                }
+              >
+                {`${files.length} file(s) queued`}
+              </SectionLabel>
+              <ul className="font-mono text-[12px] text-muted max-h-40 overflow-auto divide-y divide-border border-y border-border">
                 {files.map((f, i) => (
-                  <li key={i} className="truncate">
+                  <li key={i} className="truncate py-1.5">
                     {f.name}
                   </li>
                 ))}
               </ul>
-              <button
-                onClick={run}
-                disabled={busy}
-                className="mt-4 px-4 py-2 rounded-lg bg-accent text-white dark:text-black text-sm font-medium disabled:opacity-60"
-              >
+              <button onClick={run} disabled={busy} className="btn btn-primary mt-5">
                 {busy ? "Analyzing…" : `Analyze ${files.length} file(s)`}
               </button>
             </div>
@@ -104,7 +108,7 @@ export default function BatchPage() {
         </section>
       )}
       {error && (
-        <p role="alert" className="text-sm text-ai">
+        <p role="alert" className="text-sm text-ai border-l-2 border-ai bg-ai-soft px-4 py-3">
           {error}
         </p>
       )}
@@ -112,16 +116,16 @@ export default function BatchPage() {
       {report && (
         <section className="space-y-4" data-testid="batch-report">
           <div className="flex flex-wrap items-center gap-2">
-            {Object.entries(report.counts_by_verdict).map(([v, n]) => (
-              <span key={v} className={`text-sm rounded-full px-3 py-1 ${VERDICT_STYLE[v as keyof typeof VERDICT_STYLE]?.bg ?? "bg-surface-2"}`}>
-                {v.replace("_", " ")}: <strong>{n}</strong>
-              </span>
-            ))}
+            {Object.entries(report.counts_by_verdict).map(([v, n]) => {
+              const vs = VERDICT_STYLE[v as keyof typeof VERDICT_STYLE];
+              return (
+                <span key={v} className={`tag ${vs?.text ?? "text-ai"}`}>
+                  {vs?.code ?? v} × {n}
+                </span>
+              );
+            })}
             <span className="flex-1" />
-            <button
-              onClick={() => saveBlob(new Blob([toCsv(report)], { type: "text/csv" }), "tracelens-batch.csv")}
-              className="px-3 py-1.5 rounded-lg border border-border text-sm hover:bg-surface-2"
-            >
+            <button onClick={() => saveBlob(new Blob([toCsv(report)], { type: "text/csv" }), "tracelens-batch.csv")} className="btn btn-ghost">
               Download CSV
             </button>
             <button
@@ -129,32 +133,30 @@ export default function BatchPage() {
                 setReport(null);
                 setFiles([]);
               }}
-              className="px-3 py-1.5 rounded-lg border border-border text-sm hover:bg-surface-2"
+              className="btn btn-ghost"
             >
               New batch
             </button>
           </div>
-          <div className="card overflow-x-auto">
+          <div className="panel overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="text-left text-muted border-b border-border">
-                <tr>
-                  <th className="p-3 font-medium">File</th>
-                  <th className="p-3 font-medium">Verdict</th>
-                  <th className="p-3 font-medium">Confidence</th>
-                  <th className="p-3 font-medium">AI prob.</th>
-                  <th className="p-3 font-medium">Manipulation</th>
-                  <th className="p-3 font-medium min-w-[18rem]">Summary</th>
+              <thead className="text-left border-b border-border">
+                <tr className="label text-[10px]">
+                  <th className="p-3 font-normal">File</th>
+                  <th className="p-3 font-normal">Verdict</th>
+                  <th className="p-3 font-normal">Confidence</th>
+                  <th className="p-3 font-normal">AI prob.</th>
+                  <th className="p-3 font-normal">Manipulation</th>
+                  <th className="p-3 font-normal min-w-[18rem]">Summary</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {report.items.map((i, idx) => {
                   const s = i.verdict ? VERDICT_STYLE[i.verdict] : null;
                   return (
-                    <tr key={idx} className="align-top">
-                      <td className="p-3 max-w-[14rem] truncate">{i.filename}</td>
-                      <td className="p-3">
-                        {s ? <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${s.bg} ${s.text}`}>{i.verdict_label}</span> : <span className="text-ai text-xs">Error</span>}
-                      </td>
+                    <tr key={idx} className="align-top hover:bg-surface-2 transition-colors">
+                      <td className="p-3 font-mono text-[12px] max-w-[14rem] truncate">{i.filename}</td>
+                      <td className="p-3">{s ? <span className={`tag ${s.text}`}>{i.verdict_label}</span> : <span className="tag text-ai">Error</span>}</td>
                       <td className="p-3 font-mono">{i.verdict === "inconclusive" ? "—" : pct(i.confidence)}</td>
                       <td className="p-3 font-mono">{pct(i.ai_probability)}</td>
                       <td className="p-3 font-mono">{pct(i.manipulation_score)}</td>
@@ -165,7 +167,7 @@ export default function BatchPage() {
               </tbody>
             </table>
           </div>
-          <p className="text-xs text-muted">{report.disclaimer}</p>
+          <p className="label text-[10px] normal-case tracking-[0.08em]">{report.disclaimer}</p>
         </section>
       )}
     </div>

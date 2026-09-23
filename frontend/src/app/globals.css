@@ -1,43 +1,26 @@
 @import "tailwindcss";
 
+/* TraceLens: black and red corporate-terminal theme (dark only). */
 :root {
-  --bg: #f6f7f9;
-  --surface: #ffffff;
-  --surface-2: #f1f3f6;
-  --border: #e3e6eb;
-  --text: #111827;
-  --muted: #5b6475;
-  --accent: #0e7490;
-  --accent-soft: #e0f2f7;
-  --ai: #c0262d;
-  --ai-soft: #fdecec;
-  --edit: #b45309;
-  --edit-soft: #fdf1e3;
-  --real: #15803d;
-  --real-soft: #e7f6ec;
-  --unsure: #52607a;
-  --unsure-soft: #eef1f6;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0b0e14;
-    --surface: #121722;
-    --surface-2: #19202d;
-    --border: #262f3f;
-    --text: #e8ecf3;
-    --muted: #97a2b6;
-    --accent: #38bdf8;
-    --accent-soft: #0f2a3a;
-    --ai: #f87171;
-    --ai-soft: #3a1518;
-    --edit: #fbbf24;
-    --edit-soft: #3a2a10;
-    --real: #4ade80;
-    --real-soft: #10301c;
-    --unsure: #a3b1c9;
-    --unsure-soft: #1d2533;
-  }
+  color-scheme: dark;
+  --bg: #060608;
+  --surface: #0c0c10;
+  --surface-2: #131318;
+  --border: #22222a;
+  --border-strong: #34343f;
+  --text: #ecebf1;
+  --muted: #8b8a97;
+  --faint: #56555f;
+  --accent: #ff2b3d;
+  --accent-soft: rgba(255, 43, 61, 0.1);
+  --ai: #ff2b3d;
+  --ai-soft: rgba(255, 43, 61, 0.1);
+  --edit: #ffae1f;
+  --edit-soft: rgba(255, 174, 31, 0.1);
+  --real: #3ee0a1;
+  --real-soft: rgba(62, 224, 161, 0.09);
+  --unsure: #a2a1ad;
+  --unsure-soft: rgba(162, 161, 173, 0.1);
 }
 
 @theme inline {
@@ -45,8 +28,10 @@
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-text: var(--text);
   --color-muted: var(--muted);
+  --color-faint: var(--faint);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
   --color-ai: var(--ai);
@@ -59,23 +44,142 @@
   --color-unsure-soft: var(--unsure-soft);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-display-face);
 }
 
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+/* Unlayered CSS would beat Tailwind utilities; keep these in layers so utilities can override them. */
+@layer base {
+  body {
+    background-color: var(--bg);
+    /* faint engineering grid + a low red glow at the top */
+    background-image:
+      radial-gradient(ellipse 80% 40% at 50% -10%, rgba(255, 43, 61, 0.1), transparent 70%),
+      linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+    background-size: 100% 100%, 44px 44px, 44px 44px;
+    background-attachment: fixed;
+    color: var(--text);
+    font-family: var(--font-geist-sans), system-ui, sans-serif;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: #000;
+  }
 }
 
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-}
+@layer components {
+  /* Framed panel with red corner brackets */
+  .panel {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+  .panel::before,
+  .panel::after {
+    content: "";
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    pointer-events: none;
+  }
+  .panel::before {
+    top: -1px;
+    left: -1px;
+    border-top: 1px solid var(--accent);
+    border-left: 1px solid var(--accent);
+  }
+  .panel::after {
+    bottom: -1px;
+    right: -1px;
+    border-bottom: 1px solid var(--accent);
+    border-right: 1px solid var(--accent);
+  }
 
-.checker {
-  background-image: conic-gradient(var(--surface-2) 25%, var(--surface) 0 50%, var(--surface-2) 0 75%, var(--surface) 0);
-  background-size: 16px 16px;
+  /* Small uppercase monospace label: "01 // VERDICT" */
+  .label {
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .label-num {
+    color: var(--accent);
+  }
+
+  /* Buttons: chamfered red primary, outlined secondary */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.1rem;
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: wait;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #0a0a0a;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: #ff4d5c;
+  }
+  .btn-ghost {
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Square outlined tag: [ AI ] */
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.1rem 0.45rem;
+    border: 1px solid currentColor;
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  /* Transparent-image backdrop for evidence frames */
+  .checker {
+    background-color: #0e0e12;
+    background-image: conic-gradient(#15151b 25%, transparent 0 50%, #15151b 0 75%, transparent 0);
+    background-size: 14px 14px;
+  }
+
+  kbd {
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 11px;
+    padding: 0.05rem 0.35rem;
+    border: 1px solid var(--border-strong);
+    border-bottom-width: 2px;
+    color: var(--text);
+  }
+
+  input[type="range"] {
+    accent-color: var(--accent);
+  }
+  input[type="checkbox"] {
+    accent-color: var(--accent);
+  }
 }
 
 @keyframes scan {
@@ -84,4 +188,18 @@ body {
 }
 .scanline {
   animation: scan 1.6s ease-in-out infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+.cursor-blink {
+  animation: blink 1s step-end infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scanline,
+  .cursor-blink {
+    animation: none;
+  }
 }

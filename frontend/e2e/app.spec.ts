@@ -33,8 +33,31 @@ test("analyzing an image shows the full report", async ({ page }) => {
   expect((await download).suggestedFilename()).toBe("tracelens-report-sample.pdf");
   expect(calls).toContain("POST /api/v1/report/pdf");
 
-  await page.getByRole("button", { name: "Analyze another" }).click();
+  await page.getByRole("button", { name: "New scan" }).click();
   await expect(page.getByTestId("dropzone")).toBeVisible();
+});
+
+test("the next image can be analysed straight from a report", async ({ page }) => {
+  const calls = await mockApi(page);
+  const analyses = () => calls.filter((c) => c === "POST /api/v1/analyze").length;
+  await page.goto("/");
+  await page.getByTestId("file-input").setInputFiles(sampleImage);
+  await expect(page.getByTestId("verdict-label")).toBeVisible();
+
+  // the "analyze another" bar sits above the report
+  await expect(page.getByTestId("quick-upload")).toBeVisible();
+  await page.getByTestId("quick-upload").locator("input[type=file]").setInputFiles(sampleImage);
+  await expect.poll(analyses).toBe(2);
+  await expect(page.getByTestId("verdict-label")).toBeVisible();
+
+  // Ctrl+V on a report analyses the pasted image too
+  await page.evaluate(() => {
+    const dt = new DataTransfer();
+    dt.items.add(new File([new Uint8Array([0xff, 0xd8, 0xff])], "image.png", { type: "image/png" }));
+    window.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt }));
+  });
+  await expect.poll(analyses).toBe(3);
+  await expect(page.getByTestId("notice")).toContainText("clipboard");
 });
 
 test("unsupported files are rejected before upload", async ({ page }) => {
