@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import SiteHeader from "@/components/SiteHeader";
 import "./globals.css";
@@ -12,7 +13,9 @@ export const metadata: Metadata = {
     "Free, open source image forensics. Find out whether an image is real, AI generated or edited, and see exactly where and why.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+// Explicit prop type rather than Next's generated LayoutProps helper: those types only exist
+// after `next dev`/`next build`, and CI type-checks before building.
+export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">

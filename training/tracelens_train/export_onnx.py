@@ -60,17 +60,24 @@ def export(wrapper, size: int, out: Path) -> None:
         torch.onnx.export(wrapper, (dummy,), str(out), dynamo=True, **kwargs)
 
 
-def verify(wrapper, onnx_path: Path, size: int) -> float:
+def verify(wrapper, onnx_path: Path, size: int) -> tuple[float, float, float]:
+    """Compare ONNX Runtime with PyTorch on a batch of 3 (also exercises the dynamic batch axis).
+
+    Errors are *relative*: float32 carries about 7 significant digits, so a logit of 200,000
+    legitimately differs by a few units between runtimes. Returns (logit error, cam error,
+    largest absolute logit).
+    """
     import onnxruntime as ort
     import torch
 
-    x = torch.randn(3, 3, size, size)
+    x = (torch.rand(3, 3, size, size) - 0.45) / 0.23  # roughly the range of normalised images
     with torch.no_grad():
         ref_logit, ref_cam = (t.numpy() for t in wrapper(x))
     sess = ort.InferenceSession(str(onnx_path), providers=["CPUExecutionProvider"])
     logit, cam = sess.run(["logit", "cam"], {"image": x.numpy()})
-    diff = max(float(np.abs(logit - ref_logit).max()), float(np.abs(cam - ref_cam).max() / (np.abs(ref_cam).max() + 1e-6)))
-    return diff
+    logit_err = float((np.abs(logit - ref_logit) / np.maximum(1.0, np.abs(ref_logit))).max())
+    cam_err = float(np.abs(cam - ref_cam).max() / max(1.0, float(np.abs(ref_cam).max())))
+    return logit_err, cam_err, float(np.abs(ref_logit).max())
 
 
 def main() -> None:
@@ -92,11 +99,17 @@ def main() -> None:
     args.out_dir.mkdir(parents=True, exist_ok=True)
     onnx_path = args.out_dir / "tracelens.onnx"
     export(wrapper, ckpt["size"], onnx_path)
-    diff = verify(wrapper, onnx_path, ckpt["size"])
+    logit_err, cam_err, logit_scale = verify(wrapper, onnx_path, ckpt["size"])
+    diff = max(logit_err, cam_err)
     size_mb = onnx_path.stat().st_size / 1e6
-    print(f"ONNX saved to {onnx_path} ({size_mb:.1f} MB); max PyTorch vs ONNX difference {diff:.2e}")
+    print(f"ONNX saved to {onnx_path} ({size_mb:.1f} MB); PyTorch vs ONNX relative difference: "
+          f"logit {logit_err:.1e}, Grad-CAM {cam_err:.1e}")
     if diff > 1e-3:
         raise SystemExit("ONNX output does not match PyTorch output")
+    if logit_scale > 100:
+        print(f"WARNING: on images unlike the training data this model outputs extreme logits (up to {logit_scale:,.0f}); "
+              "healthy models stay around +/-20. Its scores will be overconfident on such images. "
+              "Train on more varied data (GenImage, your holdout set) to fix this.")
     if size_mb > MAX_MODEL_MB:
         raise SystemExit(f"Model is {size_mb:.0f} MB, over the {MAX_MODEL_MB} MB budget")
 
@@ -109,7 +122,7 @@ def main() -> None:
         "mean": [0.485, 0.456, 0.406],
         "std": [0.229, 0.224, 0.225],
         "temperature": temperature,
-        "onnx_max_abs_diff": diff,
+        "onnx_relative_diff": diff,
         "metrics": {"validation": ckpt.get("val_metrics", {})},
     }
     (args.out_dir / "model_meta.json").write_text(json.dumps(meta, indent=2))

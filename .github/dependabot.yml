@@ -1,16 +1,24 @@
 version: 2
 updates:
+  # Minor and patch updates only: major versions (e.g. TypeScript 7, ESLint 10) can break the
+  # build and should be upgraded deliberately.
   - package-ecosystem: pip
     directory: /backend
     schedule:
       interval: weekly
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: npm
     directory: /frontend
     schedule:
       interval: weekly
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
-      next-react:
-        patterns: ["next", "react", "react-dom", "eslint-config-next", "@types/react*"]
+      npm-minor-and-patch:
+        update-types: ["minor", "patch"]
   - package-ecosystem: github-actions
     directory: /
     schedule:

@@ -8,3 +8,4 @@ opencv-python-headless>=4.10
 huggingface_hub>=0.24
 scikit-learn>=1.4
 scipy>=1.11
+onnxscript>=0.3  # fallback for the new torch.export-based ONNX exporter
