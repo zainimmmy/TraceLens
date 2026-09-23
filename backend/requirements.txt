@@ -11,4 +11,4 @@ onnxruntime>=1.18
 reportlab>=4.2
 huggingface_hub>=0.24
 c2pa-python>=0.10
-pypdfium2>=4.30
+pypdfium2>=5.13.0
