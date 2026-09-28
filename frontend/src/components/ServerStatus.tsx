@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getHealth } from "@/lib/api";
+import { getHealth, LOCAL_API_BLOCKED_HELP, usesLocalApiFromPublicSite } from "@/lib/api";
 import type { Health } from "@/lib/types";
 
 type State = { kind: "checking" } | { kind: "waking" } | { kind: "ok"; health: Health } | { kind: "down" };
@@ -41,12 +41,21 @@ export default function ServerStatus() {
     detail = c.loaded ? `Model ${c.model}` : "Classifier not installed, running forensics and metadata checks only";
   }
 
+  const localHelp = state.kind === "down" && usesLocalApiFromPublicSite();
+
   return (
-    <p className="inline-flex items-center gap-2.5 font-mono text-[11px] tracking-wide text-muted" data-testid="server-status">
-      <span className={`w-1.5 h-1.5 ${dot}`} />
-      <span className="uppercase tracking-[0.16em] text-text">{status}</span>
-      <span className="text-faint">{"//"}</span>
-      <span>{detail}</span>
-    </p>
+    <div>
+      <p className="inline-flex items-center gap-2.5 font-mono text-[11px] tracking-wide text-muted" data-testid="server-status">
+        <span className={`w-1.5 h-1.5 ${dot}`} />
+        <span className="uppercase tracking-[0.16em] text-text">{status}</span>
+        <span className="text-faint">{"//"}</span>
+        <span>{detail}</span>
+      </p>
+      {localHelp && (
+        <p className="mt-3 max-w-2xl text-sm border-l-2 border-edit bg-edit-soft px-4 py-3" data-testid="local-api-help">
+          {LOCAL_API_BLOCKED_HELP}
+        </p>
+      )}
+    </div>
   );
 }

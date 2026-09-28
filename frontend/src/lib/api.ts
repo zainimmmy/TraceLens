@@ -7,6 +7,27 @@ export const MAX_PDF_MB = 20;
 export const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 export const ACCEPT_ATTR = "image/jpeg,image/png,image/webp,application/pdf,.pdf";
 
+const LOCAL_HOSTS = /^(localhost|127\.0\.0\.1|\[::1\])$/;
+
+/**
+ * True when a public website (e.g. github.io) is trying to use an API on the visitor's own
+ * computer. Browsers block that unless the visitor allows "local network access", and ad
+ * blockers often block it outright, so errors need a specific explanation.
+ */
+export function usesLocalApiFromPublicSite(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return LOCAL_HOSTS.test(new URL(API_URL).hostname) && !LOCAL_HOSTS.test(window.location.hostname);
+  } catch {
+    return false;
+  }
+}
+
+export const LOCAL_API_BLOCKED_HELP =
+  "This site uses the TraceLens server on your own computer, and your browser blocked the connection. " +
+  "Make sure the API is running, then click the icon left of the address bar → Site settings → set " +
+  '"Local network access" to Allow, and pause any ad blocker for this site. Or use the local version at http://localhost:3000.';
+
 export class ApiError extends Error {
   constructor(message: string, public status?: number) {
     super(message);
@@ -23,6 +44,7 @@ async function request(path: string, init?: RequestInit, timeoutMs = 90_000): Pr
     if ((err as Error).name === "AbortError") {
       throw new ApiError("The server took too long to respond. It may be waking up; please try again.");
     }
+    if (usesLocalApiFromPublicSite()) throw new ApiError(LOCAL_API_BLOCKED_HELP);
     throw new ApiError("Could not reach the TraceLens server. Check your connection and try again.");
   } finally {
     clearTimeout(timer);
