@@ -145,6 +145,17 @@ def test_pdf_rejects_non_report(client):
     assert client.post("/api/v1/report/pdf", json={"hello": "world"}).status_code == 422
 
 
+@pytest.mark.parametrize("origin, allowed", [
+    ("http://localhost:3000", True),
+    ("https://zainimmmy.github.io", True),
+    ("https://evil.github.io.example.com", False),
+    ("https://example.com", False),
+])
+def test_cors_origins(client, origin, allowed):
+    r = client.options("/api/v1/health", headers={"Origin": origin, "Access-Control-Request-Method": "GET"})
+    assert (r.headers.get("access-control-allow-origin") == origin) is allowed
+
+
 def test_client_ip_respects_proxy_hops(monkeypatch):
     from starlette.requests import Request
 

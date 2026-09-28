@@ -49,6 +49,9 @@ class Settings:
     cors_origins: list[str] = field(
         default_factory=lambda: _env_list("CORS_ORIGINS", "http://localhost:3000")
     )
+    # Also allow GitHub Pages sites, so a site published there can use this API (including one
+    # running on the visitor's own machine). Safe here: the API has no cookies, logins or private data.
+    cors_origin_regex: str | None = os.getenv("CORS_ORIGIN_REGEX", r"https://[a-z0-9-]+\.github\.io") or None
     rate_limit_analyze: str = os.getenv("RATE_LIMIT_ANALYZE", "12/minute")
     rate_limit_batch: str = os.getenv("RATE_LIMIT_BATCH", "3/minute")
     rate_limit_pdf_analyze: str = os.getenv("RATE_LIMIT_PDF_ANALYZE", "4/minute")

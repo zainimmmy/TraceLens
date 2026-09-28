@@ -58,6 +58,27 @@ git push -u origin main
 
 The **Actions** tab will start the CI workflow (backend tests, frontend build and e2e, Docker build).
 
+### 1b. Publish the website on GitHub Pages (free)
+
+GitHub Pages only serves ready-made files, so do **not** pick "Deploy from a branch → main / (root)":
+that would just show the README. The workflow `.github/workflows/pages.yml` builds the website and
+publishes it for you.
+
+1. On GitHub: your repo → **Settings → Pages**.
+2. Under **Build and deployment → Source**, choose **GitHub Actions**. That's the only setting.
+3. Go to **Actions → Deploy website to GitHub Pages → Run workflow** (it also runs automatically
+   whenever `frontend/` changes on `main`).
+4. When it's green, your site is at `https://YOUR-USERNAME.github.io/TraceLens/`
+   (the link is also shown on the Settings → Pages screen).
+
+Pages hosts only the website. The analysis API still has to run somewhere:
+
+* **Until you host the API:** the site uses the API on the visitor's own computer
+  (`http://localhost:8000`). Start the API on your PC (step 0) and the Pages site works for you.
+  Chrome may ask to "access devices on your local network": click **Allow**.
+* **Once the API is online:** add a repository variable `API_URL` (Settings → Secrets and variables
+  → Actions → Variables) set to the API's address, then re-run the Pages workflow.
+
 ---
 
 ## 2. Train the model on Kaggle (you)
