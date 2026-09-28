@@ -32,7 +32,9 @@ def _prepare(rgb: np.ndarray) -> tuple[np.ndarray, bool]:
     return np.asarray(img), True
 
 
-def analyze_ela(rgb: np.ndarray, source_format: str) -> dict:
+def analyze_ela(rgb: np.ndarray, source_format: str, resampled: bool = False) -> dict:
+    """``resampled``: the image was scaled down before analysis, which blurs the JPEG block
+    grid ELA relies on, so the result is marked less reliable."""
     work, downscaled = _prepare(rgb)
     h, w = work.shape[:2]
 
@@ -58,8 +60,14 @@ def analyze_ela(rgb: np.ndarray, source_format: str) -> dict:
     ceiling = max(float(np.percentile(diff, 99.5)), 1.0)
     vis = normalize01(np.clip(diff / ceiling, 0, 1))
 
+    note = None
+    if source_format != "JPEG":
+        note = "ELA is less reliable on non-JPEG files."
+    elif resampled or downscaled:
+        note = "ELA is less reliable here because the image was scaled down for analysis."
     return {
-        "reliability": "normal" if source_format == "JPEG" else "low",
+        "reliability": "low" if note else "normal",
+        "reliability_note": note,
         "quality_used": ELA_QUALITY,
         "max_error_level": int(diff.max()),
         "mean_error_level": round(float(diff.mean()), 2),

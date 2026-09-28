@@ -64,6 +64,28 @@ def test_load_rejects_oversized(monkeypatch):
         load_image(encode(natural_image(), "PNG"))
 
 
+def test_large_images_are_scaled_to_the_analysis_budget(monkeypatch):
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "analysis_max_pixels", 100_000)
+    exif = Image.Exif()
+    exif[0x0112] = 6  # stored landscape, displayed portrait
+    img = load_image(encode(natural_image(1200, 800), exif=exif))
+    assert img.downscaled and img.width * img.height <= 100_000
+    assert img.height > img.width  # orientation still applied
+    assert (img.original_width, img.original_height) == (800, 1200)
+    result = analyze_ela(img.rgb, img.format, img.downscaled)
+    assert result["reliability"] == "low" and "scaled down" in result["reliability_note"]
+
+
+def test_small_images_are_not_scaled(monkeypatch):
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "analysis_max_pixels", 1_000_000)
+    img = load_image(encode(natural_image(640, 480), "PNG"))
+    assert not img.downscaled and (img.width, img.height) == (640, 480) == (img.original_width, img.original_height)
+
+
 def test_exif_orientation_is_applied():
     exif = Image.Exif()
     exif[0x0112] = 6  # rotate 90 degrees

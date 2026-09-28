@@ -7,9 +7,8 @@ __pycache__/
 htmlcov/
 .ruff_cache/
 
-# Models and training outputs (published to the Hugging Face Hub instead)
-backend/models/*.onnx
-backend/models/*.json
+# Training outputs. The model the API serves (backend/models/: tracelens.onnx 16 MB,
+# model_meta.json, fft_baseline.json) IS committed, so the hosted API can load it directly.
 training/artifacts/
 training/mlruns/
 training/mlflow.db

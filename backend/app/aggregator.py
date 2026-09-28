@@ -81,7 +81,7 @@ def build_findings(classifier: dict, frequency: dict, ela: dict, noise: dict, me
             add("classifier", "neutral", "low", f"{name} is unsure ({pct}% AI), inside the inconclusive band.")
 
     if ela.get("suspicious_regions"):
-        caveat = "" if ela.get("reliability") == "normal" else " ELA is less reliable on non-JPEG files."
+        caveat = "" if ela.get("reliability") == "normal" else " " + (ela.get("reliability_note") or "ELA is less reliable on this file.")
         add("ela", "manipulated", "medium",
             f"Error Level Analysis found {ela['suspicious_regions']} region(s) that recompress differently from the rest of the image.{caveat}")
     else:

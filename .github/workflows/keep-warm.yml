@@ -1,10 +1,12 @@
-name: Keep the Space warm
+name: Keep the API awake
 
-# Free Spaces sleep when idle. A periodic health check keeps the demo responsive.
-# Set the repository variable API_URL, e.g. https://your-username-tracelens-api.hf.space
+# Render's free plan puts the API to sleep after 15 minutes without visitors, and waking it
+# takes about a minute. A health check every 14 minutes keeps it awake (~720 hours a month,
+# inside the free plan's 750). Uses the repository variable API_URL, e.g.
+# https://tracelens-api.onrender.com. GitHub may run scheduled jobs a few minutes late.
 on:
   schedule:
-    - cron: "17 */6 * * *"
+    - cron: "*/14 * * * *"
   workflow_dispatch:
 
 permissions: {}
@@ -14,4 +16,4 @@ jobs:
     if: ${{ vars.API_URL != '' }}
     runs-on: ubuntu-latest
     steps:
-      - run: curl -fsS --max-time 120 "${{ vars.API_URL }}/api/v1/health"
+      - run: curl -fsS --retry 3 --retry-delay 20 --max-time 120 "${{ vars.API_URL }}/api/v1/health"

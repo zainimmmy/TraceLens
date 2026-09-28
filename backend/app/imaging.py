@@ -31,9 +31,17 @@ class LoadedImage:
     format: str  # JPEG / PNG / WEBP
     mime: str
     pil: Image.Image  # the decoded file as-is (first frame, original mode)
-    rgb: np.ndarray  # H x W x 3 uint8, EXIF orientation applied
-    width: int
+    rgb: np.ndarray  # H x W x 3 uint8, EXIF orientation applied (possibly scaled down, see below)
+    width: int  # size of `rgb`, the frame all region coordinates refer to
     height: int
+    original_width: int = 0
+    original_height: int = 0
+    downscaled: bool = False  # True when settings.analysis_max_pixels shrank the image
+
+
+def _budget_size(w: int, h: int, budget: int) -> tuple[int, int]:
+    scale = (budget / (w * h)) ** 0.5
+    return max(32, int(w * scale)), max(32, int(h * scale))
 
 
 def load_image(data: bytes) -> LoadedImage:
@@ -51,6 +59,12 @@ def load_image(data: bytes) -> LoadedImage:
         if fmt not in ALLOWED_FORMATS:
             raise ImageValidationError("Only JPG, PNG and WEBP images are supported.")
         pil.seek(0)  # animated WEBP/PNG: analyse the first frame
+        orig_w, orig_h = pil.size
+        budget = settings.analysis_max_pixels
+        if budget and orig_w * orig_h > budget and fmt == "JPEG":
+            # Let the JPEG decoder skip detail at decode time (1/2, 1/4, 1/8 scale): far less
+            # memory than decoding full size and shrinking afterwards.
+            pil.draft("RGB", _budget_size(orig_w, orig_h, budget))
         pil.load()
     except ImageValidationError:
         raise
@@ -59,11 +73,14 @@ def load_image(data: bytes) -> LoadedImage:
     except (UnidentifiedImageError, OSError, SyntaxError, ValueError) as exc:
         raise ImageValidationError("The file is not a readable image.") from exc
 
-    oriented = ImageOps.exif_transpose(pil.copy())
-    rgb = np.asarray(oriented.convert("RGB"), dtype=np.uint8)
-    h, w = rgb.shape[:2]
-    if min(h, w) < 32:
+    if min(orig_w, orig_h) < 32:
         raise ImageValidationError("The image is too small to analyse (minimum 32 px).")
+    oriented = ImageOps.exif_transpose(pil.copy()).convert("RGB")
+    if budget and oriented.width * oriented.height > budget:
+        oriented = oriented.resize(_budget_size(oriented.width, oriented.height, budget), Image.Resampling.LANCZOS)
+    rgb = np.asarray(oriented, dtype=np.uint8)
+    h, w = rgb.shape[:2]
+    rotated = orig_w != orig_h and (w > h) != (orig_w > orig_h)
 
     return LoadedImage(
         raw=data,
@@ -73,6 +90,9 @@ def load_image(data: bytes) -> LoadedImage:
         rgb=rgb,
         width=w,
         height=h,
+        original_width=orig_h if rotated else orig_w,
+        original_height=orig_w if rotated else orig_h,
+        downscaled=w * h < orig_w * orig_h,
     )
 
 

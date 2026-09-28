@@ -193,7 +193,29 @@ It is never used for training, so it measures real-world accuracy.
 
 ---
 
-## 4. Deploy the API to a Hugging Face Space (you, then automatic)
+## 4. Put the API online with Render (free)
+
+Hugging Face now requires the paid PRO plan to host Docker Spaces, so the API runs on Render's free
+plan instead. `render.yaml` in the repo holds every setting (including low-memory limits measured to
+fit the free plan's 512 MB), and the trained model in `backend/models/` is committed, so nothing needs
+typing in by hand.
+
+1. Go to https://render.com → **Get Started** → **Sign in with GitHub**, and allow Render to see the `TraceLens` repo.
+2. Dashboard → **New +** → **Blueprint** → choose **TraceLens** → **Connect**.
+3. Render reads `render.yaml` and shows one service, `tracelens-api`, on the **Free** plan → **Deploy Blueprint** (or **Apply**).
+   If it asks for a card, that's Render's identity check; the Free plan itself costs $0.
+4. Wait for the build (about 5 minutes) until the service says **Live**. Copy its URL from the top of
+   the service page, e.g. `https://tracelens-api.onrender.com`.
+5. Test it: open `<that URL>/api/v1/health` → you should see `"status":"ok"` and `"loaded":true`.
+6. Connect the website to it: GitHub repo → **Settings → Secrets and variables → Actions → Variables →
+   New repository variable**: name `API_URL`, value the Render URL (no slash at the end). Then
+   **Actions → Deploy website to GitHub Pages → Run workflow**. The same variable powers the
+   keep-awake ping (`keep-warm.yml`, every 14 minutes).
+
+Every push to `main` redeploys the API automatically. On the server, photos are analysed at about
+2 megapixels (full resolution on your PC); the report says when ELA is less reliable because of this.
+
+### 4 (old). Hugging Face Space (needs a paid PRO account)
 
 1. On Hugging Face: **New → Space**. Name `tracelens-api`, SDK **Docker**, hardware **CPU basic (free)**, public.
 2. Space **Settings → Variables and secrets**:

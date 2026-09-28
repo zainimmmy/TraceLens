@@ -64,7 +64,9 @@ export default function ReportView({ report, onNewFiles, onReset, onBack, notice
           <p className="label text-[10px]">Case file</p>
           <p className="font-display text-xl font-semibold truncate max-w-[36rem] mt-1">{report.filename || "uploaded image"}</p>
           <p className="font-mono text-[11px] text-muted mt-1">
-            {report.image_info.format} · {report.image_info.width}×{report.image_info.height} · {bytes(report.image_info.bytes)} ·{" "}
+            {report.image_info.format} · {report.image_info.original_width || report.image_info.width}×
+            {report.image_info.original_height || report.image_info.height}
+            {report.image_info.downscaled && ` (analysed at ${report.image_info.width}×${report.image_info.height})`} · {bytes(report.image_info.bytes)} ·{" "}
             {(report.timings_ms.total / 1000).toFixed(1)}s · ID {report.id.slice(0, 8)}
           </p>
         </div>

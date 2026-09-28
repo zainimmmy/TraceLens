@@ -128,7 +128,7 @@ export default function EvidenceViewer({ report }: { report: AnalysisReport }) {
       </div>
       <p className="text-sm text-muted mt-5 leading-relaxed">{LAYERS[layer].explain}</p>
       {layer === "ela" && report.signals.ela.reliability === "low" && (
-        <p className="text-xs text-edit mt-2">This file is not a JPEG, so Error Level Analysis is less reliable here.</p>
+        <p className="text-xs text-edit mt-2">{report.signals.ela.reliability_note ?? "Error Level Analysis is less reliable on this file."}</p>
       )}
     </section>
   );

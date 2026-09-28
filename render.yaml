@@ -1,0 +1,32 @@
+# Render Blueprint: runs the TraceLens API on Render's free plan.
+# Render dashboard -> New -> Blueprint -> pick this repo -> Apply. See docs/DEPLOYMENT_GUIDE.md.
+services:
+  - type: web
+    name: tracelens-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
+      # The free plan has 512 MB of memory. Measured peak with these settings: ~400 MB for a
+      # 24 MP photo (vs 1.3 GB at full resolution).
+      - key: ANALYSIS_MAX_PIXELS
+        value: "2000000"
+      - key: ANALYSIS_THREADS
+        value: "1"
+      - key: MAX_CONCURRENT_ANALYSES
+        value: "1"
+      - key: MAX_BATCH_MB
+        value: "25"
+      # Stops Python's allocator from reserving extra memory per thread.
+      - key: MALLOC_ARENA_MAX
+        value: "2"
+      # Render's proxy adds one X-Forwarded-For hop (used for per-visitor rate limits).
+      - key: TRUSTED_PROXY_HOPS
+        value: "1"
+      # Optional: add GEMINI_API_KEY in the Render dashboard for AI-written summaries.

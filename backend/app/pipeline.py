@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import threading
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
@@ -23,7 +24,9 @@ DISCLAIMER = (
     "Use TraceLens to support human judgment, never to replace it."
 )
 
-_pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="tracelens")
+_pool = ThreadPoolExecutor(max_workers=max(1, settings.analysis_threads), thread_name_prefix="tracelens")
+# Caps simultaneous analyses so a small server cannot run out of memory under parallel uploads.
+_analysis_slots = threading.BoundedSemaphore(max(1, settings.max_concurrent_analyses))
 
 
 def _timed(fn, *args):
@@ -43,12 +46,17 @@ def _run_classifier(img: LoadedImage) -> dict:
 
 
 def analyze_bytes(data: bytes, filename: str | None = None, *, with_images: bool = True, allow_llm: bool = True) -> dict:
+    with _analysis_slots:
+        return _analyze(data, filename, with_images=with_images, allow_llm=allow_llm)
+
+
+def _analyze(data: bytes, filename: str | None, *, with_images: bool, allow_llm: bool) -> dict:
     t0 = time.perf_counter()
     img = load_image(data)
 
     futures = {
         "classifier": _pool.submit(_timed, _run_classifier, img),
-        "ela": _pool.submit(_timed, analyze_ela, img.rgb, img.format),
+        "ela": _pool.submit(_timed, analyze_ela, img.rgb, img.format, img.downscaled),
         "noise": _pool.submit(_timed, analyze_noise, img.rgb),
         "metadata": _pool.submit(_timed, analyze_metadata, img.raw, img.pil, img.format, img.mime),
         "frequency": _pool.submit(_timed, analyze_frequency, img.rgb),
@@ -98,7 +106,8 @@ def analyze_bytes(data: bytes, filename: str | None = None, *, with_images: bool
         "summary": summary,
         "summary_source": summary_source,
         "images": images,
-        "image_info": {"format": img.format, "width": img.width, "height": img.height, "bytes": len(data)},
+        "image_info": {"format": img.format, "width": img.width, "height": img.height, "bytes": len(data),
+                       "original_width": img.original_width, "original_height": img.original_height, "downscaled": img.downscaled},
         "timings_ms": timings,
         "version": __version__,
         "disclaimer": DISCLAIMER,

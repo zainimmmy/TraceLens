@@ -64,7 +64,7 @@ export interface AnalysisReport {
   signals: {
     classifier: { available: boolean; ai_probability: number | null; model: string | null; crop_probabilities?: number[] };
     frequency: { high_to_mid_ratio: number; baseline_ai_probability: number | null };
-    ela: { reliability: string; max_error_level: number; mean_error_level: number; suspicious_regions: number; regions: Region[] };
+    ela: { reliability: string; reliability_note?: string | null;max_error_level: number; mean_error_level: number; suspicious_regions: number; regions: Region[] };
     noise: { median_noise_level?: number; inconsistent_blocks_share: number; suspicious_regions: number; regions: Region[] };
     metadata: MetadataSignal;
     heatmap_url: string | null;
@@ -73,7 +73,8 @@ export interface AnalysisReport {
   summary: string;
   summary_source: "gemini" | "template";
   images: { original?: string; gradcam?: string | null; ela?: string; noise?: string };
-  image_info: { format: string; width: number; height: number; bytes: number };
+  /** width/height: the analysed frame (region boxes use it); original_*: the file's real size. */
+  image_info: { format: string; width: number; height: number; bytes: number; original_width?: number; original_height?: number; downscaled?: boolean };
   timings_ms: Record<string, number>;
   version: string;
   disclaimer: string;

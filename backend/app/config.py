@@ -25,6 +25,14 @@ class Settings:
     # PDFs: analyse up to this many embedded images per document
     max_pdf_bytes: int = int(os.getenv("MAX_PDF_MB", "20")) * 1024 * 1024
     max_pdf_images: int = int(os.getenv("MAX_PDF_IMAGES", "10"))
+    # Low-memory hosts (e.g. a 512 MB free server): analyse at most this many pixels, scaling
+    # larger photos down first. A 12 MP photo needs ~850 MB at full resolution. 0 = no limit.
+    analysis_max_pixels: int = int(os.getenv("ANALYSIS_MAX_PIXELS", "0"))
+    # Analyses allowed to run at the same time; memory use grows with each one.
+    max_concurrent_analyses: int = int(os.getenv("MAX_CONCURRENT_ANALYSES", "4"))
+    # Worker threads for the five checks of one analysis. 1 runs them one after another, which
+    # lowers peak memory on small servers (their CPU share is too small to gain from parallelism).
+    analysis_threads: int = int(os.getenv("ANALYSIS_THREADS", "4"))
 
     # Model
     model_dir: Path = Path(os.getenv("MODEL_DIR", Path(__file__).resolve().parent.parent / "models"))
