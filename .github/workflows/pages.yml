@@ -39,7 +39,7 @@ jobs:
           STATIC_EXPORT: "1"
           PAGES_BASE_PATH: /${{ github.event.repository.name }}
           NEXT_PUBLIC_API_URL: ${{ vars.API_URL || 'http://localhost:8000' }}
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: frontend/out
 
